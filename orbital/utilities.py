@@ -316,21 +316,18 @@ def elements_from_state_vector(r, v, mu):
             arg_pe = 2 * pi - arg_pe
 
         # True anomaly is angle between eccentricity
-        # vector and position vector.
-        print("acos() = " + str(dot(ev, r) / (norm(ev) * norm(r))))
-        
-        calculation = dot(ev, r) / (norm(ev) * norm(r))
+        # vector and position vector.        
+        inner_product = dot(ev, r) / (norm(ev) * norm(r))
 
-        if calculation > 1:
-            calculation = floor(calculation) 
-            f = acos(calculation)
+        if inner_product > 1:
+            inner_product = floor(inner_product) 
+            f = acos(inner_product)
         else: 
             f = acos(dot(ev, r) / (norm(ev) * norm(r)))
 
         if dot(r, v) < 0:
             f = 2 * pi - f
 
-    print(a, e, i, raan, arg_pe, f)
     return OrbitalElements(a=a, e=e, i=i, raan=raan, arg_pe=arg_pe, f=f)
 
 
