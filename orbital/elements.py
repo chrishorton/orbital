@@ -9,7 +9,7 @@ import sgp4.io
 import sgp4.propagation
 from astropy import time
 from numpy import arctan, cos, degrees, sin, sqrt
-from represent import ReprMixin
+from represent import RepresentationMixin
 from scipy.constants import kilo, pi
 from sgp4.earth_gravity import wgs72
 
@@ -18,6 +18,7 @@ from .maneuver import (
     Maneuver, Operation, PropagateAnomalyBy, PropagateAnomalyTo)
 from .utilities import *
 
+J1970 = time.Time('J1970', scale='utc')
 J2000 = time.Time('J2000', scale='utc')
 
 __all__ = [
@@ -25,7 +26,7 @@ __all__ = [
 ]
 
 
-class KeplerianElements(ReprMixin, object):
+class KeplerianElements(RepresentationMixin, object):
 
     """Defines an orbit using keplerian elements.
 
@@ -55,6 +56,8 @@ class KeplerianElements(ReprMixin, object):
         self.ref_epoch = ref_epoch
 
         self._t = 0  # This is important because M := M0
+        
+        super(KeplerianElements, self).__init__()
 
         super(KeplerianElements, self).__init__()
 
@@ -136,7 +139,16 @@ class KeplerianElements(ReprMixin, object):
         # Fix mean anomaly at epoch for new orbit and position.
         oldM0 = self.M0
         self.M0 = ou.mod(self.M - self.n * self.t, 2 * pi)
-        assert self.M0 == oldM0
+        # assert self.M0 == oldM0
+
+        # Now check that the computed properties for position and velocity are
+        # reasonably close to the inputs.
+        # 1e-4 is a large uncertainty, but we don't want to throw an error
+        # within small differences (e.g. 1e-4 m is 0.1 mm)
+        if (abs(self.v - v) > 1e-4).any() or (abs(self.r - r) > 1e-4).any():
+            raise RuntimeError(
+                'Failed to set orbital elements for velocity. Please file a bug'
+                ' report at https://github.com/RazerM/orbital/issues')
 
         return self
 
@@ -335,13 +347,9 @@ class KeplerianElements(ReprMixin, object):
             for apoapsis_name in self.body.apoapsis_names:
                 if attr == '{}_radius'.format(apoapsis_name):
                     return self.apocenter_radius
-                elif attr == '{}_altitude'.format(apoapsis_name):
-                    return self.apocenter_altitude
             for periapsis_name in self.body.periapsis_names:
                 if attr == '{}_radius'.format(periapsis_name):
                     return self.pericenter_radius
-                elif attr == '{}_altitude'.format(periapsis_name):
-                    return self.pericenter_altitude
         raise AttributeError(
             "'{name}' object has no attribute '{attr}'"
             .format(name=type(self).__name__, attr=attr))
@@ -381,23 +389,11 @@ class KeplerianElements(ReprMixin, object):
 
     @property
     def apocenter_radius(self):
-        """Return apocenter radius"""
         return (1 + self.e) * self.a
 
     @property
     def pericenter_radius(self):
-        """Return pericenter radius"""
         return (1 - self.e) * self.a
-
-    @property
-    def apocenter_altitude(self):
-        """Return apocenter altitude"""
-        return altitude_from_radius(self.apocenter_radius, self.body)
-
-    @property
-    def pericenter_altitude(self):
-        """Return pericenter altitude"""
-        return altitude_from_radius(self.pericenter_radius, self.body)
 
     @property
     def U(self):

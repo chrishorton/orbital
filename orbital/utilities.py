@@ -250,7 +250,16 @@ def specific_orbital_energy(position, velocity, mu):
 
 
 def elements_from_state_vector(r, v, mu):
+    ''' Returns orbital elements from an initial state vector.
+    :param r: [m]
+    :type position: :py:class:`~orbital.utilities.Position`
+    :param v: [m/s]
+    :type position: :py:class:`~orbital.utilities.Velocity`
+    :param mu: Standard gravitational parameter (:math:`\mu`) [m\ :sup:`3`\ ·s\ :sup:`-2`]
+    :type mu: float
+    '''
     h = angular_momentum(r, v)
+
     n = node_vector(h)
 
     ev = eccentricity_vector(r, v, mu)
@@ -266,11 +275,11 @@ def elements_from_state_vector(r, v, mu):
     # momentum vector and its z component.
     i = acos(h.z / norm(h))
 
-    if abs(i) < SMALL_NUMBER:
+    if abs(i - 0) < SMALL_NUMBER:
         # For non-inclined orbits, raan is undefined;
         # set to zero by convention
         raan = 0
-        if abs(e) < SMALL_NUMBER:
+        if abs(e - 0) < SMALL_NUMBER:
             # For circular orbits, place periapsis
             # at ascending node by convention
             arg_pe = 0
@@ -289,8 +298,8 @@ def elements_from_state_vector(r, v, mu):
         # node and eccentricity vectors.
         arg_pe = acos(dot(n, ev) / (norm(n) * norm(ev)))
 
-    if abs(e) < SMALL_NUMBER:
-        if abs(i) < SMALL_NUMBER:
+    if abs(e - 0) < SMALL_NUMBER:
+        if abs(i - 0) < SMALL_NUMBER:
             # True anomaly is angle between position
             # vector and its x component.
             f = acos(r.x / norm(r))
@@ -308,11 +317,20 @@ def elements_from_state_vector(r, v, mu):
 
         # True anomaly is angle between eccentricity
         # vector and position vector.
-        f = acos(dot(ev, r) / (norm(ev) * norm(r)))
+        print("acos() = " + str(dot(ev, r) / (norm(ev) * norm(r))))
+        
+        calculation = dot(ev, r) / (norm(ev) * norm(r))
+
+        if calculation > 1:
+            calculation = floor(calculation) 
+            f = acos(calculation)
+        else: 
+            f = acos(dot(ev, r) / (norm(ev) * norm(r)))
 
         if dot(r, v) < 0:
             f = 2 * pi - f
 
+    print(a, e, i, raan, arg_pe, f)
     return OrbitalElements(a=a, e=e, i=i, raan=raan, arg_pe=arg_pe, f=f)
 
 
@@ -371,7 +389,6 @@ class XyzVector(np.ndarray):
     def __new__(cls, x, y, z):
         # Create ndarray and cast to our class type
         obj = np.asarray(np.hstack([x, y, z])).view(cls)
-
         # Finally, we must return the newly created object:
         return obj
 
